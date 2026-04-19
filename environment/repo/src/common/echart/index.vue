@@ -3,8 +3,9 @@
 </template>
 
 <script>
-import tdTheme from './theme.json' // 引入默认主题
+import tdTheme from './theme.json'
 import '../map/fujian.js'
+import { debounce } from '@/utils'
 
 export default {
   name: 'echart',
@@ -27,36 +28,66 @@ export default {
     },
     options: {
       type: Object,
-      default: ()=>({})
+      default: () => ({})
     }
   },
-  data () {
+  data() {
     return {
-      chart: null
+      chart: null,
+      $_resizeHandler: null
     }
   },
   watch: {
     options: {
-      handler (options) {
-        // 设置true清空echart缓存
-        this.chart.setOption(options, true)
+      handler(options) {
+        if (this.chart && !this.chart.isDisposed()) {
+          this.chart.setOption(options, true, true)
+        }
       },
-      deep: true
+      deep: true,
+      immediate: false
     }
   },
-  mounted () {
-    this.$echarts.registerTheme('tdTheme', tdTheme); // 覆盖默认主题
-    this.initChart();
+  mounted() {
+    this.$echarts.registerTheme('tdTheme', tdTheme)
+    this.$_resizeHandler = debounce(this.resize, 200)
+    this.initChart()
+    this.initListener()
   },
-  beforeDestroy () {
-    this.chart.dispose()
-    this.chart = null
+  activated() {
+    if (!this.chart || this.chart.isDisposed()) {
+      this.initChart()
+    } else {
+      this.resize()
+    }
+    window.addEventListener('resize', this.$_resizeHandler)
+  },
+  deactivated() {
+    window.removeEventListener('resize', this.$_resizeHandler)
+  },
+  beforeDestroy() {
+    this.destroyChart()
   },
   methods: {
-    initChart () {
-      // 初始化echart
+    initListener() {
+      window.addEventListener('resize', this.$_resizeHandler)
+    },
+    initChart() {
       this.chart = this.$echarts.init(this.$el, 'tdTheme')
       this.chart.setOption(this.options, true)
+    },
+    resize() {
+      if (this.chart && !this.chart.isDisposed()) {
+        this.chart.resize()
+      }
+    },
+    destroyChart() {
+      window.removeEventListener('resize', this.$_resizeHandler)
+      if (this.chart && !this.chart.isDisposed()) {
+        this.chart.dispose()
+      }
+      this.chart = null
+      this.$_resizeHandler = null
     }
   }
 }

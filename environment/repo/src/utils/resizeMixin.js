@@ -1,5 +1,4 @@
 // 混入代码 resize-mixins.js
-// 改成 Scale 缩放之后，没有使用这个代码，但是保留
 import { debounce } from '@/utils';
 const resizeChartMethod = '$__resizeChartMethod';
 
@@ -18,14 +17,19 @@ export default {
     if (this.chart) {
       this.chart.resize()
     }
+    window.addEventListener('resize', this[resizeChartMethod], false);
+  },
+  deactivated() {
+    // keep-alive 失活时移除事件监听器
+    window.removeEventListener('resize', this[resizeChartMethod]);
   },
   beforeDestroy() {
-    window.removeEventListener('reisze', this[resizeChartMethod]);
+    window.removeEventListener('resize', this[resizeChartMethod]);
   },
   methods: {
     // 防抖函数来控制 resize 的频率
     [resizeChartMethod]: debounce(function() {
-      if (this.chart) {
+      if (this.chart && !this.chart.isDisposed()) {
         this.chart.resize();
       }
     }, 300),
