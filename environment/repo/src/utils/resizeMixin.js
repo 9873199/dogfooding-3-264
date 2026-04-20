@@ -1,37 +1,32 @@
 // 混入代码 resize-mixins.js
-import { debounce } from '@/utils';
-const resizeChartMethod = '$__resizeChartMethod';
+// 改成 Scale 缩放之后，没有使用这个代码，但是保留
+import { debounce } from '@/utils'
+
+const resizeChartMethod = '$__resizeChartMethod'
 
 export default {
   data() {
-    // 在组件内部将图表 init 的引用映射到 chart 属性上
     return {
-      chart: null,
-    };
+      chart: null
+    }
   },
   created() {
-    window.addEventListener('resize', this[resizeChartMethod], false);
+    this[resizeChartMethod] = debounce(() => {
+      if (this.chart && !this.chart.isDisposed()) {
+        this.chart.resize()
+      }
+    }, 300)
   },
   activated() {
-    // 防止 keep-alive 之后图表变形
-    if (this.chart) {
+    if (this.chart && !this.chart.isDisposed()) {
       this.chart.resize()
     }
-    window.addEventListener('resize', this[resizeChartMethod], false);
+    window.addEventListener('resize', this[resizeChartMethod], false)
   },
   deactivated() {
-    // keep-alive 失活时移除事件监听器
-    window.removeEventListener('resize', this[resizeChartMethod]);
+    window.removeEventListener('resize', this[resizeChartMethod])
   },
   beforeDestroy() {
-    window.removeEventListener('resize', this[resizeChartMethod]);
-  },
-  methods: {
-    // 防抖函数来控制 resize 的频率
-    [resizeChartMethod]: debounce(function() {
-      if (this.chart && !this.chart.isDisposed()) {
-        this.chart.resize();
-      }
-    }, 300),
-  },
-};
+    window.removeEventListener('resize', this[resizeChartMethod])
+  }
+}

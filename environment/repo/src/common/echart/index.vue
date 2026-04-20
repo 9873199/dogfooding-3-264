@@ -34,23 +34,25 @@ export default {
   data() {
     return {
       chart: null,
-      $_resizeHandler: null
+      $_resizeHandler: null,
+      $_hasListener: false
     }
   },
   watch: {
     options: {
       handler(options) {
         if (this.chart && !this.chart.isDisposed()) {
-          this.chart.setOption(options, true, true)
+          this.chart.setOption(options, true, false)
+          this.chart.resize()
         }
       },
       deep: true,
-      immediate: false
+      immediate: true
     }
   },
   mounted() {
     this.$echarts.registerTheme('tdTheme', tdTheme)
-    this.$_resizeHandler = debounce(this.resize, 200)
+    this.$_resizeHandler = debounce(this.resize, 100)
     this.initChart()
     this.initListener()
   },
@@ -58,32 +60,51 @@ export default {
     if (!this.chart || this.chart.isDisposed()) {
       this.initChart()
     } else {
+      this.chart.setOption(this.options, true, false)
       this.resize()
     }
-    window.addEventListener('resize', this.$_resizeHandler)
+    if (!this.$_hasListener) {
+      this.initListener()
+    }
   },
   deactivated() {
-    window.removeEventListener('resize', this.$_resizeHandler)
+    this.removeListener()
   },
   beforeDestroy() {
     this.destroyChart()
   },
   methods: {
     initListener() {
+      if (this.$_hasListener) return
       window.addEventListener('resize', this.$_resizeHandler)
+      window.addEventListener('fullscreenchange', this.$_resizeHandler)
+      this.$_hasListener = true
+    },
+    removeListener() {
+      if (!this.$_hasListener) return
+      window.removeEventListener('resize', this.$_resizeHandler)
+      window.removeEventListener('fullscreenchange', this.$_resizeHandler)
+      this.$_hasListener = false
     },
     initChart() {
+      if (this.chart && !this.chart.isDisposed()) {
+        this.chart.dispose()
+      }
       this.chart = this.$echarts.init(this.$el, 'tdTheme')
-      this.chart.setOption(this.options, true)
+      this.chart.setOption(this.options, true, false)
     },
     resize() {
       if (this.chart && !this.chart.isDisposed()) {
-        this.chart.resize()
+        this.chart.resize({
+          width: 'auto',
+          height: 'auto'
+        })
       }
     },
     destroyChart() {
-      window.removeEventListener('resize', this.$_resizeHandler)
+      this.removeListener()
       if (this.chart && !this.chart.isDisposed()) {
+        this.chart.clear()
         this.chart.dispose()
       }
       this.chart = null
