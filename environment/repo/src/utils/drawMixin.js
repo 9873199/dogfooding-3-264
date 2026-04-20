@@ -16,42 +16,56 @@ const baseProportion = parseFloat((baseWidth / baseHeight).toFixed(5))
 export default {
   data() {
     return {
-      // * 定时函数
       drawTiming: null
     }
   },
   mounted () {
     this.calcRate()
     window.addEventListener('resize', this.resize)
+    window.addEventListener('fullscreenchange', this.resize)
+  },
+  activated() {
+    window.addEventListener('resize', this.resize)
+    window.addEventListener('fullscreenchange', this.resize)
+  },
+  deactivated() {
+    clearTimeout(this.drawTiming)
+    window.removeEventListener('resize', this.resize)
+    window.removeEventListener('fullscreenchange', this.resize)
   },
   beforeDestroy () {
+    clearTimeout(this.drawTiming)
     window.removeEventListener('resize', this.resize)
+    window.removeEventListener('fullscreenchange', this.resize)
   },
   methods: {
     calcRate () {
       const appRef = this.$refs["appRef"]
       if (!appRef) return 
-      // 当前宽高比
       const currentRate = parseFloat((window.innerWidth / window.innerHeight).toFixed(5))
-      if (appRef) {
-        if (currentRate > baseProportion) {
-          // 表示更宽
-          scale.width = ((window.innerHeight * baseProportion) / baseWidth).toFixed(5)
-          scale.height = (window.innerHeight / baseHeight).toFixed(5)
-          appRef.style.transform = `scale(${scale.width}, ${scale.height}) translate(-50%, -50%)`
-        } else {
-          // 表示更高
-          scale.height = ((window.innerWidth / baseProportion) / baseHeight).toFixed(5)
-          scale.width = (window.innerWidth / baseWidth).toFixed(5)
-          appRef.style.transform = `scale(${scale.width}, ${scale.height}) translate(-50%, -50%)`
-        }
+      appRef.style.transformOrigin = '0 0'
+      appRef.style.position = 'absolute'
+      appRef.style.left = '50%'
+      appRef.style.top = '50%'
+      appRef.style.overflow = 'hidden'
+      if (currentRate > baseProportion) {
+        scale.width = ((window.innerHeight * baseProportion) / baseWidth).toFixed(5)
+        scale.height = (window.innerHeight / baseHeight).toFixed(5)
+        appRef.style.transform = `scale(${scale.width}, ${scale.height}) translate(-50%, -50%)`
+      } else {
+        scale.height = ((window.innerWidth / baseProportion) / baseHeight).toFixed(5)
+        scale.width = (window.innerWidth / baseWidth).toFixed(5)
+        appRef.style.transform = `scale(${scale.width}, ${scale.height}) translate(-50%, -50%)`
       }
+      this.$nextTick(() => {
+        window.dispatchEvent(new Event('resize'))
+      })
     },
     resize () {
       clearTimeout(this.drawTiming)
       this.drawTiming = setTimeout(() => {
         this.calcRate()
-      }, 200)
+      }, 100)
     }
   },
 }
