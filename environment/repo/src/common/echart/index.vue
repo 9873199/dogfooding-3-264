@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import tdTheme from './theme.json' // 引入默认主题
+import tdTheme from './theme.json'
 import '../map/fujian.js'
 
 export default {
@@ -27,36 +27,54 @@ export default {
     },
     options: {
       type: Object,
-      default: ()=>({})
+      default: () => ({})
     }
   },
-  data () {
+  data() {
     return {
       chart: null
     }
   },
   watch: {
     options: {
-      handler (options) {
-        // 设置true清空echart缓存
-        this.chart.setOption(options, true)
+      handler(options) {
+        if (this.chart) {
+          this.chart.setOption(options, true)
+        }
       },
       deep: true
     }
   },
-  mounted () {
-    this.$echarts.registerTheme('tdTheme', tdTheme); // 覆盖默认主题
-    this.initChart();
+  mounted() {
+    this.$echarts.registerTheme('tdTheme', tdTheme)
+    this.initChart()
+    window.addEventListener('resize', this.handleResize)
   },
-  beforeDestroy () {
-    this.chart.dispose()
-    this.chart = null
+  activated() {
+    if (this.chart) {
+      this.chart.resize()
+    }
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.handleResize)
+    if (this.chart) {
+      this.chart.dispose()
+      this.chart = null
+    }
   },
   methods: {
-    initChart () {
-      // 初始化echart
-      this.chart = this.$echarts.init(this.$el, 'tdTheme')
+    initChart() {
+      if (!this.id) return
+      const chartDom = document.getElementById(this.id)
+      if (!chartDom) return
+
+      this.chart = this.$echarts.init(chartDom, 'tdTheme')
       this.chart.setOption(this.options, true)
+    },
+    handleResize() {
+      if (this.chart) {
+        this.chart.resize()
+      }
     }
   }
 }
